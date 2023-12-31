@@ -244,17 +244,22 @@ struct ast_node *parse_operation()
 	return NULL;
 }
 struct ast_node *parse_let() {
-	int current_index = parsing_index;
-	if (token_stream[parsing_index++] == tok_let) {
+	std::cout << "Parsing let" << std::endl;	
+	int current_index = parsing_idx;
+	if (token_stream[parsing_idx++] == tok_let) {
 		struct ast_node *var_node = parse_variable();
-		if (token_stream[parsing_idx]!= tok_op && id_map[parsing_idx++]!="=") {
+		if (token_stream[parsing_idx]!= tok_op && id_map[parsing_idx]!="=") {
 			return NULL;
 		}
+		parsing_idx++;
 		struct ast_node *t1 = parse_term();
 		if (token_stream[parsing_idx]!=tok_in) {
 			return NULL;
 		}
+
 		struct ast_node *t2 = parse_term();
+		
+		std::cout << "Parsed term 2" << std::endl;	
 		struct ast_node *let_node = new ast_node;
 		let_node->node_type = node_let;
 		let_node->identifier_idx = current_index;
@@ -264,6 +269,7 @@ struct ast_node *parse_let() {
 		return let_node;
 
 	}
+	return NULL;
 }
 struct ast_node *parse_ifthenelse()
 {
@@ -300,15 +306,18 @@ struct ast_node *parse_ifthenelse()
 	return NULL;
 }
 
+struct ast_node *parse_letrec() {
+	return NULL;
+}
 struct ast_node *parse_term()
 {
 	int current_index = parsing_idx;
 	if (token_stream[current_index] == tok_let) {
 		return parse_let();
 	}
-	//if (token_steam[current_index] == tok_letrec) {
-	//	return parse_letrec();
-	//}
+	if (token_stream[current_index] == tok_letrec) {
+		return parse_letrec();
+	}
 
 	if (token_stream[current_index] == tok_variable)
 	{
@@ -492,6 +501,9 @@ int get_token()
 
 void print_node(struct ast_node *node)
 {
+	if (node->node_type == node_let) {
+		std::cout << "var_let";
+	}
 	if (node->node_type == node_variable)
 	{
 		std::cout << "var_node_" << id_map[node->identifier_idx];
@@ -554,6 +566,9 @@ struct ast_node *recursive_rewrite(struct ast_node *node)
 	std::cout << "REWRITING:: " << std::endl;
 	dfs(node);
 	std::cout << std::endl;
+	if (node->node_type == node_let) {
+		
+	}
 	if (node->node_type == node_app)
 	{
 		struct ast_node *left = node->children[0], *right = node->children[1];
@@ -625,6 +640,14 @@ struct ast_node *recursive_rewrite(struct ast_node *node)
 			{
 				node->value = left->value * right->value;
 			}
+			else if (id_map[node->identifier_idx] == "=") {
+				node->node_type = node_boolean;
+				if (left->value == right->value) {
+					id_map[node->identifier_idx] = "true";
+				} else {
+					id_map[node->identifier_idx] = "false";
+				}
+			}
 		}
 
 		return clone(node);
@@ -637,7 +660,9 @@ void dfs(struct ast_node *node)
 {
 	for (int i = 0; i < 3; i++)
 	{
-		if (node->children[i] != NULL && (node->node_type == node_app || node->node_type == node_lamda || node->node_type == node_op || node->node_type == node_ifthenelse))
+		if (node->children[i] != NULL && (node->node_type == node_app ||
+					node->node_type == node_let
+					|| node->node_type == node_lamda || node->node_type == node_op || node->node_type == node_ifthenelse))
 		{
 			std::cout << node << '_';
 			print_node(node);
