@@ -253,7 +253,8 @@ struct ast_node *parse_let() {
 		}
 		parsing_idx++;
 		struct ast_node *t1 = parse_term();
-		if (token_stream[parsing_idx]!=tok_in) {
+		std::cout << "Parsed t1\n";
+		if (token_stream[parsing_idx++]!=tok_in) {
 			return NULL;
 		}
 
@@ -526,7 +527,22 @@ void print_node(struct ast_node *node)
 	}
 	else if (node->node_type == node_op)
 	{
-		std::cout << "op_node_" << id_map[node->identifier_idx];
+		std::cout << "op_node_"; 
+		if (id_map[node->identifier_idx] == "+") {
+			std::cout << "plus";
+		}
+		if (id_map[node->identifier_idx] == "-") {
+			std::cout << "minus";
+		}
+		if (id_map[node->identifier_idx] == "*") {
+			std::cout << "mul";
+		}
+		if (id_map[node->identifier_idx] == "/") {
+			std::cout << "div";
+		}
+		if (id_map[node->identifier_idx] == "=") {
+			std::cout << "equal";
+		}
 	}
 	else if (node->node_type == node_ifthenelse)
 	{
@@ -547,7 +563,7 @@ struct ast_node *replace_variable(struct ast_node *replacee, struct ast_node *re
 		// TODO: check if it should be cloned or what?
 		// This definitely needs to be cloned otherwise the recursion does not work in Y-combinator
 		replacee = (replacer);
-		return replacee;
+		return clone(replacee);
 	}
 	for (int i = 0; i < 3; i++)
 	{
@@ -556,31 +572,60 @@ struct ast_node *replace_variable(struct ast_node *replacee, struct ast_node *re
 			replacee->children[i] = replace_variable(replacee->children[i], replacer, var_idx);
 		}
 	}
-	return (replacee);
+	return clone(replacee);
 }
 
 void dfs(struct ast_node *node);
 
+bool var_occurs(ast_node *node, int idx_tobefound) {
+	if (node == NULL) return false;
+	bool res = false;
+	if (node->node_type == node_variable) {
+		return res || id_map[node->identifier_idx]==id_map[idx_tobefound];
+	} else {
+		for (int i=0; i<3; i++) {
+			res = res || var_occurs(node->children[i], idx_tobefound);
+		}
+		return res;
+	}
+}
+
 struct ast_node *recursive_rewrite(struct ast_node *node)
 {
-	std::cout << "REWRITING:: " << std::endl;
-	dfs(node);
-	std::cout << std::endl;
+	//std::cout << "REWRITING:: " << std::endl;
+	//dfs(node);
+	//std::cout << std::endl;
 	if (node->node_type == node_let) {
-		
+	//	std::cout << "let rule" << std::endl;
+		// let x = e in e1
+		// check if variable x occurs in e1	
+		// if does not then return e1
+		// else replace all of x,s in e1 by e call it e1', return let x = e in e1' 
+		if (!var_occurs(node->children[2], node->children[0]->identifier_idx)) {
+			return recursive_rewrite(node->children[2]);
+		}
+		struct ast_node* temp = clone(node->children[1]);
+		struct ast_node* replaced = replace_variable(node->children[2], node->children[1], node->children[0]->identifier_idx);
+		node->children[1] = temp;
+		node->children[2] = recursive_rewrite(replaced);
+		return recursive_rewrite(node);
+
 	}
 	if (node->node_type == node_app)
 	{
 		struct ast_node *left = node->children[0], *right = node->children[1];
+		if (left!=NULL && left->node_type==node_variable){
+			node->children[1] = recursive_rewrite(right);
+			return clone(node);
+		}
+
 		if (left!=NULL && left->node_type!=node_lamda
 				&& left->node_type!=node_integer) {
-			std::cout << "e-app1" << std::endl;
 			left = recursive_rewrite(left); // e-app1
 			node->children[0] = (left);
 			return recursive_rewrite(node);
 		}
 		else if (right!=NULL && !isvalue(right)) {
-			std::cout << "e-app2" << std::endl;
 			right = recursive_rewrite(right); // e-app2
 			node->children[1] = (right);
 			return recursive_rewrite(node);
@@ -589,7 +634,6 @@ struct ast_node *recursive_rewrite(struct ast_node *node)
 		{
 			// check the left node
 			// replace all occurences of variable, with the graph to the right
-			std::cout << "e-app" << std::endl;
 			node = (left->children[1]);
 			left->children[1] = replace_variable(left->children[1], right,
 				 left->children[0]->identifier_idx);
@@ -615,36 +659,43 @@ struct ast_node *recursive_rewrite(struct ast_node *node)
 		struct ast_node *left = node->children[0], *right = node->children[1];
 		if (left->node_type != node_integer)
 		{
-			recursive_rewrite(left);
+			left = recursive_rewrite(left);
+			node->children[0] = left;
 		}
 		if (right->node_type != node_integer)
 		{
-			recursive_rewrite(right);
+			right = recursive_rewrite(right);
+			node->children[1] = right;
 		}
 		if (left->node_type == node_integer && right->node_type == node_integer)
 		{
-			node->node_type = node_integer;
 			if (id_map[node->identifier_idx] == "+")
 			{
+			node->node_type = node_integer;
 				node->value = left->value + right->value;
 			}
 			else if (id_map[node->identifier_idx] == "-")
 			{
+			node->node_type = node_integer;
 				node->value = left->value - right->value;
 			}
 			else if (id_map[node->identifier_idx] == "/")
 			{
+			node->node_type = node_integer;
 				node->value = left->value / right->value;
 			}
 			else if (id_map[node->identifier_idx] == "*")
 			{
+			node->node_type = node_integer;
 				node->value = left->value * right->value;
 			}
 			else if (id_map[node->identifier_idx] == "=") {
 				node->node_type = node_boolean;
 				if (left->value == right->value) {
+					node->identifier_idx = ++parsing_idx;
 					id_map[node->identifier_idx] = "true";
 				} else {
+					node->identifier_idx = ++parsing_idx;
 					id_map[node->identifier_idx] = "false";
 				}
 			}

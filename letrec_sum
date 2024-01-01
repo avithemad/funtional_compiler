@@ -1,0 +1,1 @@
+let sum = lamda(x) {if(=(x,1)) then {1} else {+(x, apply(sum, -(x, 1)))}} in apply(sum, 10)
