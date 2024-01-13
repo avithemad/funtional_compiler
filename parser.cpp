@@ -208,8 +208,8 @@ struct ast_node *parse_operation()
 		if (token_stream[parsing_idx++] != tok_comma)
 			return NULL;
 		struct ast_node *t2 = parse_term();
-			if (token_stream[parsing_idx++] != tok_r_paren)
-		return NULL;
+		if (token_stream[parsing_idx++] != tok_r_paren)
+			return NULL;
 		struct ast_node *op_node = new ast_node;
 		op_node->children[0] = t1;
 		op_node->children[1] = t2;
@@ -221,26 +221,36 @@ struct ast_node *parse_operation()
 	return NULL;
 }
 
-struct ast_node* parse_ifthenelse() {
-	if (token_stream[parsing_idx++] == tok_if) {
-		if (token_stream[parsing_idx++]!=tok_l_paren) return NULL;
-		struct ast_node* t1 = parse_term();
-		if (token_stream[parsing_idx++]!=tok_r_paren) return NULL;
-		if (token_stream[parsing_idx++]!=tok_then) return NULL;
-		if (token_stream[parsing_idx++]!=tok_l_curl) return NULL;
-		struct ast_node* t2 = parse_term();
-		if (token_stream[parsing_idx++]!=tok_r_curl) return NULL;
-		if (token_stream[parsing_idx++]!=tok_else) return NULL;
-		if (token_stream[parsing_idx++]!=tok_l_curl) return NULL;
-		struct ast_node* t3 = parse_term();
-		if (token_stream[parsing_idx++]!=tok_r_curl) return NULL;
+struct ast_node *parse_ifthenelse()
+{
+	if (token_stream[parsing_idx++] == tok_if)
+	{
+		if (token_stream[parsing_idx++] != tok_l_paren)
+			return NULL;
+		struct ast_node *t1 = parse_term();
+		if (token_stream[parsing_idx++] != tok_r_paren)
+			return NULL;
+		if (token_stream[parsing_idx++] != tok_then)
+			return NULL;
+		if (token_stream[parsing_idx++] != tok_l_curl)
+			return NULL;
+		struct ast_node *t2 = parse_term();
+		if (token_stream[parsing_idx++] != tok_r_curl)
+			return NULL;
+		if (token_stream[parsing_idx++] != tok_else)
+			return NULL;
+		if (token_stream[parsing_idx++] != tok_l_curl)
+			return NULL;
+		struct ast_node *t3 = parse_term();
+		if (token_stream[parsing_idx++] != tok_r_curl)
+			return NULL;
 
-		struct ast_node* if_node = new ast_node;
+		struct ast_node *if_node = new ast_node;
 		if_node->children[0] = t1;
 		if_node->children[1] = t2;
 		if_node->children[2] = t3;
 		if_node->node_type = node_ifthenelse;
-		
+
 		return if_node;
 	}
 	return NULL;
@@ -277,7 +287,8 @@ struct ast_node *parse_term()
 	{
 		return parse_operation();
 	}
-	if (token_stream[current_index] == tok_if) {
+	if (token_stream[current_index] == tok_if)
+	{
 		return parse_ifthenelse();
 	}
 	return NULL;
@@ -363,13 +374,16 @@ int get_token()
 			return tok_apply;
 		}
 
-		if (Identifier == "if") {
+		if (Identifier == "if")
+		{
 			return tok_if;
 		}
-		if (Identifier == "then") {
+		if (Identifier == "then")
+		{
 			return tok_then;
 		}
-		if (Identifier == "else") {
+		if (Identifier == "else")
+		{
 			return tok_else;
 		}
 		return tok_variable;
@@ -442,20 +456,125 @@ void print_node(struct ast_node *node)
 	{
 		std::cout << "bool_node_" << id_map[node->identifier_idx];
 	}
-	else if (node->node_type == node_op) {
+	else if (node->node_type == node_op)
+	{
 		std::cout << "op_node_" << id_map[node->identifier_idx];
 	}
-	else if (node->node_type == node_ifthenelse) {
+	else if (node->node_type == node_ifthenelse)
+	{
 		std::cout << "ifthenelse";
 	}
+}
+
+bool isvalue(struct ast_node *node)
+{
+	return node->node_type == node_lamda || node->node_type == node_integer || node->node_type == node_boolean;
+}
+
+struct ast_node *replace_variable(struct ast_node *replacee, struct ast_node *replacer, int var_idx)
+{
+	if (replacee->node_type == node_variable &&
+		id_map[replacee->identifier_idx].compare(id_map[var_idx]) == 0)
+	{
+		// TODO: check if it should be cloned or what?
+		// This definitely needs to be cloned otherwise the recursion does not work in Y-combinator
+		replacee = replacer;
+		return replacee;
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		if (replacee->children[i] != NULL)
+		{
+			replacee->children[i] = replace_variable(replacee->children[i], replacer, var_idx);
+		}
+	}
+	return replacee;
+}
+
+void dfs(struct ast_node *node);
+
+struct ast_node *recursive_rewrite(struct ast_node *node)
+{
+	std::cout << "REWRITING:: " << std::endl;
+	dfs(node);
+	std::cout << std::endl;
+
+	if (node->node_type == node_app)
+	{
+		struct ast_node *left = node->children[0], *right = node->children[1];
+		if (left!=NULL && left->node_type!=node_lamda) {
+			left = recursive_rewrite(left); // e-app1
+			node->children[0] = left;
+		}
+		if (right!=NULL && !isvalue(right)) {
+			right = recursive_rewrite(right); // e-app2
+			node->children[1] = right;
+		}
+		if (left!=NULL && right!=NULL &&left->node_type == node_lamda && isvalue(right)) // e-app
+		{
+			// check the left node
+			// replace all occurences of variable, with the graph to the right
+			node = left->children[1];
+			left->children[1] = replace_variable(left->children[1], right,
+												 left->children[0]->identifier_idx);
+			return recursive_rewrite(node);
+		}
+	}
+	if (node->node_type == node_ifthenelse) {
+		if (node->children[0]->node_type!=node_boolean) {
+			node->children[0] = recursive_rewrite(node->children[0]);
+		}
+		if (node->children[0]->node_type == node_boolean) {
+			if (id_map[node->children[0]->identifier_idx] == "true") {
+				return recursive_rewrite(node->children[1]);
+			} else {
+				return recursive_rewrite(node->children[2]);
+			}
+		}
+	}
+	if (node->node_type == node_op)
+	{
+		// check to see if it can be evaluated
+		struct ast_node *left = node->children[0], *right = node->children[1];
+		if (left->node_type != node_integer)
+		{
+			recursive_rewrite(left);
+		}
+		if (right->node_type != node_integer)
+		{
+			recursive_rewrite(right);
+		}
+		if (left->node_type == node_integer && right->node_type == node_integer)
+		{
+			node->node_type = node_integer;
+			if (id_map[node->identifier_idx] == "+")
+			{
+				node->value = left->value + right->value;
+			}
+			else if (id_map[node->identifier_idx] == "-")
+			{
+				node->value = left->value - right->value;
+			}
+			else if (id_map[node->identifier_idx] == "/")
+			{
+				node->value = left->value / right->value;
+			}
+			else if (id_map[node->identifier_idx] == "*")
+			{
+				node->value = left->value * right->value;
+			}
+		}
+		return node;
+	}
+
+	return node;
 }
 
 void dfs(struct ast_node *node)
 {
 	for (int i = 0; i < 3; i++)
 	{
-		if (node->children[i] != NULL && (node->node_type == node_app || node->node_type == node_lamda || node->node_type == node_op
-		|| node->node_type == node_ifthenelse))
+		if (node->children[i] != NULL && (node->node_type == node_app || node->node_type == node_lamda || node->node_type == node_op || node->node_type == node_ifthenelse))
 		{
 			std::cout << node << '_';
 			print_node(node);
@@ -480,16 +599,30 @@ int main()
 
 	struct ast_node *ast;
 	int si = parsing_idx;
+
 	ast = parse_term();
-	// Minimal parsing required for single evaluation is complete as of 19:42 10th Jan
-	// TODO: implement semantics from the rewrite rules given
+
 	if (ast != NULL)
 	{
 		dfs(ast);
+		std::cout << "Parsing done" << std::endl;
 	}
 	else
 	{
 		std::cout << "Error in parsing\n";
+		exit(0);
+	}
+	ast = recursive_rewrite(ast);
+	// Minimal parsing required for single evaluation is complete as of 19:42 10th Jan
+	// TODO: implement semantics from the rewrite rules given
+	if (ast != NULL)
+	{
+		std::cout << "Evaluated: " << ast->value << std::endl;
+		dfs(ast);
+	}
+	else
+	{
+		std::cout << "Error in evaluating\n";
 	}
 	return 0;
 }
