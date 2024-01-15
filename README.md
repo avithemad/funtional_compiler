@@ -18,7 +18,7 @@ Examples:
 
 2. Cumulative sum computation
 
-let fib = cumulate(x) {if(=(x, 1)) then {1} else {+(x, apply(cumulate, -(x, 1)))}} in apply(cumulate, 10)
+`let fib = cumulate(x) {if(=(x, 1)) then {1} else {+(x, apply(cumulate, -(x, 1)))}} in apply(cumulate, 10)`
 
 
 ## References
