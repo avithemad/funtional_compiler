@@ -1,0 +1,30 @@
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 80%;
+    margin: 0 auto;
+  }
+  
+  .input-section, .output-section {
+    width: 45%;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  #output-text {
+    margin-top: 10px;
+  }
+
+  .input-box {
+    height: 250px;
+    width: 80%;
+    padding: 10px;
+    font-family: monospace;
+  }

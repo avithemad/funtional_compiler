@@ -1,0 +1,22 @@
+digraph G {
+x555a02539ac0_var_let -> x555a02539760_var_node_sum
+x555a02539ac0_var_let -> x555a02539af0_lamda_node
+x555a02539af0_lamda_node -> x555a02539b20_var_node_x
+x555a02539af0_lamda_node -> x555a02539b50_ifthenelse
+x555a02539b50_ifthenelse -> x555a02539b80_op_node_equal
+x555a02539b80_op_node_equal -> x555a02539bb0_var_node_x
+x555a02539b80_op_node_equal -> x555a02539be0_int_node_1
+x555a02539b50_ifthenelse -> x555a02539c10_int_node_1
+x555a02539b50_ifthenelse -> x555a02539c40_op_node_plus
+x555a02539c40_op_node_plus -> x555a02539c70_var_node_x
+x555a02539c40_op_node_plus -> x555a02539ca0_app_node
+x555a02539ca0_app_node -> x555a02539cd0_var_node_sum
+x555a02539ca0_app_node -> x555a02539d00_op_node_minus
+x555a02539d00_op_node_minus -> x555a02539d30_var_node_x
+x555a02539d00_op_node_minus -> x555a02539d60_int_node_1
+x555a02539ac0_var_let -> x555a0253add0_op_node_plus
+x555a0253add0_op_node_plus -> x555a0253ae00_int_node_10
+x555a0253add0_op_node_plus -> x555a0253ae30_app_node
+x555a0253ae30_app_node -> x555a0253ae60_var_node_sum
+x555a0253ae30_app_node -> x555a0253ae90_int_node_9
+}

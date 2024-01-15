@@ -596,6 +596,8 @@ struct ast_node *recursive_rewrite(struct ast_node *node)
 	//dfs(node);
 	//std::cout << std::endl;
 	if (node->node_type == node_let) {
+		dfs(node);
+		std::cout << "\n\n";
 	//	std::cout << "let rule" << std::endl;
 		// let x = e in e1
 		// check if variable x occurs in e1	
