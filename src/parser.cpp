@@ -4,7 +4,7 @@
 #include <string>
 
 #define NEWNODE (struct ast_node *)malloc(sizeof(struct ast_node));
-
+//test
 struct ast_node
 {
 	int node_type;
