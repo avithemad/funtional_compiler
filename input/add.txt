@@ -1,0 +1,1 @@
+apply(lamda(f){apply(f, 6)}, apply(lamda(x){lamda(y){+(x, y)}}, 5))

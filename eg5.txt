@@ -1,1 +1,0 @@
-apply(apply(lamda(x){lamda(f){apply(f, x)}}, 5), apply(lamda(t){lamda(z){+(z, t)}}, 1))

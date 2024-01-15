@@ -1,1 +1,0 @@
-apply(lamda(f) { apply(lamda(x) {apply(f, apply(x, x))}, lamda(x) {apply(f, apply(x, x))}) }, 3)

@@ -1,1 +1,0 @@
-apply(lamda(y){z}, apply(apply(lamda(x){x}, x), apply(lamda(x){x}, x)))
