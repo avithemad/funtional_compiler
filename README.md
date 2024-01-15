@@ -20,6 +20,11 @@ Examples:
 
 `let fib = cumulate(x) {if(=(x, 1)) then {1} else {+(x, apply(cumulate, -(x, 1)))}} in apply(cumulate, 10)`
 
+3. Fibonacci computation
+
+```
+let fib = lamda(x) {if (=(x, 1)) then {1} else {if (=(x,0)) then {1} else {+(apply ( fib, -(x, 1)), apply(fib, -(x,2)))}}} in apply(fib, 11)
+```
 
 ## References
 [1]https://www.csa.iisc.ac.in/~raghavan/CleanedPav2011/stlc.pdf
